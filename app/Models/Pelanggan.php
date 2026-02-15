@@ -9,12 +9,18 @@ class Pelanggan extends Model
     protected $table = 'pelanggans';
 
     protected $fillable = [
+        'user_id',
         'kd_pelanggan',
         'nm_pelanggan',
         'alamat',
         'kota',
         'telpon'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function penjualans()
     {

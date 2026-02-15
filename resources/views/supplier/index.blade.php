@@ -1,54 +1,71 @@
 @extends('layouts.app')
 
-@section('title', 'Data Supplier')
+@section('title', 'Daftar Supplier')
 
 @section('content')
-<div class="card">
-    <div class="card-header">
-        <h2>Daftar Supplier</h2>
-        <a href="{{ route('supplier.create') }}" class="btn btn-primary">Tambah Supplier</a>
-    </div>
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Manajemen Supplier</h1>
+    <a href="{{ route('supplier.create') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+        <i class="fas fa-plus fa-sm text-white-50 mr-1"></i> Tambah Supplier Baru
+    </a>
+</div>
 
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Kode</th>
-                    <th>Nama Supplier</th>
-                    <th>Kota</th>
-                    <th>Telepon</th>
-                    <th>Alamat</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($suppliers as $supplier)
-                <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td><span class="badge" style="background: var(--background);">{{ $supplier->kd_suplier }}</span></td>
-                    <td><strong>{{ $supplier->nm_suplier }}</strong></td>
-                    <td>{{ $supplier->kota }}</td>
-                    <td>{{ $supplier->telpon }}</td>
-                    <td>{{ $supplier->alamat }}</td>
-                    <td style="display: flex; gap: 0.5rem;">
-                        <a href="{{ route('supplier.edit', $supplier->id) }}" class="btn btn-outline" style="padding: 0.25rem 0.5rem;">Edit</a>
-                        <form action="{{ route('supplier.destroy', $supplier->id) }}" method="POST" onsubmit="return confirm('Yakin hapus supplier ini?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline" style="padding: 0.25rem 0.5rem; color: var(--danger); border-color: #fecaca;">Hapus</button>
-                        </form>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                        Belum ada data supplier.
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Data Rekanan Supplier</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                <thead class="bg-light">
+                    <tr>
+                        <th width="50">No</th>
+                        <th width="100">Kode</th>
+                        <th>Nama Supplier</th>
+                        <th>Alamat & Kota</th>
+                        <th>Kontak</th>
+                        <th width="150">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($suppliers as $supplier)
+                    <tr>
+                        <td>{{ $loop->iteration }}</td>
+                        <td><span class="badge badge-light border">{{ $supplier->kd_suplier }}</span></td>
+                        <td><strong>{{ $supplier->nm_suplier }}</strong></td>
+                        <td>
+                            <div>{{ $supplier->alamat }}</div>
+                            <div class="small text-muted"><i class="fas fa-map-marker-alt mr-1"></i> {{ $supplier->kota }}</div>
+                        </td>
+                        <td>
+                            <div class="badge badge-info"><i class="fas fa-phone mr-1"></i> {{ $supplier->telpon }}</div>
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ route('supplier.edit', $supplier->id) }}" class="btn btn-warning btn-sm shadow-sm">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                <form action="{{ route('supplier.destroy', $supplier->id) }}" method="POST" onsubmit="return confirm('Yakin hapus supplier ini?')" style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm shadow-sm">
+                                        <i class="fas fa-trash"></i> Hapus
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fas fa-folder-open fa-3x mb-3 d-block"></i>
+                            Belum ada data supplier.
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 @endsection

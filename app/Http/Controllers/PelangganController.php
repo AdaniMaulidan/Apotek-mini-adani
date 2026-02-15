@@ -50,4 +50,31 @@ class PelangganController extends Controller
         return redirect()->route('pelanggan.list')
             ->with('success', 'Pelanggan berhasil ditambahkan dengan kode: ' . $data['kd_pelanggan']);
     }
+
+    public function edit(Pelanggan $pelanggan)
+    {
+        return view('pelanggan.edit', compact('pelanggan'));
+    }
+
+    public function update(Request $request, Pelanggan $pelanggan)
+    {
+        $request->validate([
+            'nm_pelanggan' => 'required',
+            'alamat' => 'nullable',
+            'kota' => 'nullable',
+            'telpon' => 'nullable',
+        ]);
+
+        $pelanggan->update($request->all());
+
+        return redirect()->route('pelanggan.list')
+            ->with('success', 'Data pelanggan berhasil diperbarui.');
+    }
+
+    public function destroy(Pelanggan $pelanggan)
+    {
+        $pelanggan->delete();
+        return redirect()->route('pelanggan.list')
+            ->with('success', 'Pelanggan berhasil dihapus.');
+    }
 }

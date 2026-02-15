@@ -13,7 +13,17 @@ class PenjualanController extends Controller
 {
     public function index()
     {
-        $penjualans = Penjualan::with('pelanggan')->latest()->get();
+        $query = Penjualan::with('pelanggan')->latest();
+
+        if (auth()->user()->role === 'pelanggan') {
+            $pelanggan = auth()->user()->pelanggan;
+            if (!$pelanggan) {
+                return view('penjualan.index', ['penjualans' => collect([])]);
+            }
+            $query->where('kd_pelanggan', $pelanggan->id);
+        }
+
+        $penjualans = $query->get();
         return view('penjualan.index', compact('penjualans'));
     }
 
@@ -21,6 +31,17 @@ class PenjualanController extends Controller
     {
         $obats = Obat::all();
         $pelanggans = Pelanggan::all();
+
+        // Ensure user has profile if they are a pelanggan
+        if (auth()->user()->role === 'pelanggan' && !auth()->user()->pelanggan) {
+            Pelanggan::create([
+                'user_id' => auth()->id(),
+                'kd_pelanggan' => Pelanggan::generateKode(),
+                'nm_pelanggan' => auth()->user()->name,
+            ]);
+            // Refresh to get the relationship
+            auth()->user()->load('pelanggan');
+        }
 
         return view('penjualan.create', compact('obats', 'pelanggans'));
     }
@@ -42,7 +63,9 @@ class PenjualanController extends Controller
             $rules['kd_pelanggan'] = 'required|exists:pelanggans,id';
         }
 
-        $request->validate($rules);
+        $request->validate($rules, [
+            'kd_pelanggan.required' => 'Data profil pelanggan tidak ditemukan. Silakan hubungi admin.',
+        ]);
 
         DB::beginTransaction();
 
@@ -51,13 +74,17 @@ class PenjualanController extends Controller
 
             // Jika pelanggan baru, buat dulu datanya
             if ($request->customer_type == 'new') {
-                $pelanggan = Pelanggan::create([
+                $pelangganData = [
                     'kd_pelanggan' => Pelanggan::generateKode(),
                     'nm_pelanggan' => $request->new_nm_pelanggan,
                     'alamat' => $request->new_alamat,
                     'kota' => $request->new_kota,
                     'telpon' => $request->new_telpon,
-                ]);
+                ];
+
+                // Jika admin yang buatkan akun pelanggan (optional logic could be added here)
+                
+                $pelanggan = Pelanggan::create($pelangganData);
                 $pelangganId = $pelanggan->id;
             }
 
@@ -135,6 +162,33 @@ class PenjualanController extends Controller
     public function show($id)
     {
         $penjualan = Penjualan::with(['pelanggan', 'penjualanDetails.obat'])->findOrFail($id);
+
+        // Security check for pelanggan
+        if (auth()->user()->role === 'pelanggan') {
+            $pelanggan = auth()->user()->pelanggan;
+            if (!$pelanggan || $penjualan->kd_pelanggan != $pelanggan->id) {
+                abort(403, 'Akses ditolak ke riwayat orang lain.');
+            }
+        }
+
         return view('penjualan.show', compact('penjualan'));
+    }
+
+    public function report(Request $request)
+    {
+        $query = Penjualan::with(['pelanggan', 'penjualanDetails.obat']);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('tgl_nota', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('tgl_nota', '<=', $request->end_date);
+        }
+
+        $penjualans = $query->latest()->get();
+        $totalPendapatan = $penjualans->sum('total');
+
+        return view('admin.reports.sales', compact('penjualans', 'totalPendapatan'));
     }
 }

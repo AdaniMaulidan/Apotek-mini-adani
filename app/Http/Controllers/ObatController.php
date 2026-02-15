@@ -35,6 +35,7 @@ class ObatController extends Controller
     {
         $request->validate([
             'nm_obat' => 'required',
+            'tgl_kadaluarsa' => 'required|date',
             'jenis' => 'required',
             'satuan_besar' => 'required',
             'satuan_menengah' => 'nullable',
@@ -78,6 +79,7 @@ class ObatController extends Controller
         $request->validate([
             'kd_obat' => 'required|unique:obats,kd_obat,' . $id,
             'nm_obat' => 'required',
+            'tgl_kadaluarsa' => 'required|date',
             'jenis' => 'required',
             'satuan_besar' => 'required',
             'satuan_menengah' => 'nullable',
@@ -105,5 +107,34 @@ class ObatController extends Controller
 
         return redirect()->route('obat.index')
             ->with('success', 'Obat berhasil dihapus');
+    }
+
+    public function expired()
+    {
+        $overdue = Obat::where('tgl_kadaluarsa', '<', now())->get();
+        $warning = Obat::whereBetween('tgl_kadaluarsa', [now(), now()->addDays(30)])->get();
+        
+        return view('obat.expired', compact('overdue', 'warning'));
+    }
+
+    public function cleanupExpired()
+    {
+        $count = Obat::where('tgl_kadaluarsa', '<', now())->count();
+        Obat::where('tgl_kadaluarsa', '<', now())->delete();
+        
+        return redirect()->route('obat.expired')->with('success', "$count data obat kadaluarsa telah dihapus dari sistem.");
+    }
+
+    public function katalog(Request $request)
+    {
+        $search = $request->get('search');
+        $obats = Obat::where('stok', '>', 0)
+            ->where('tgl_kadaluarsa', '>', now())
+            ->when($search, function($query) use ($search) {
+                return $query->where('nm_obat', 'like', "%{$search}%");
+            })
+            ->get();
+            
+        return view('pelanggan.katalog', compact('obats'));
     }
 }

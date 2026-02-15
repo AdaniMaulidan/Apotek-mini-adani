@@ -22,7 +22,8 @@ class Obat extends Model
         'harga_jual_menengah',
         'harga_jual_kecil',
         'stok',
-        'kd_suplier'
+        'kd_suplier',
+        'tgl_kadaluarsa'
     ];
 
     public function pembelianDetails()
