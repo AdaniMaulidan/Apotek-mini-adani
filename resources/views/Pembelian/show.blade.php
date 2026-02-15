@@ -63,7 +63,7 @@
                     <td><span class="badge" style="background: var(--background);">{{ $detail->obat->kd_obat }}</span></td>
                     <td><strong>{{ $detail->obat->nm_obat }}</strong></td>
                     <td style="text-align: right;">Rp {{ number_format($detail->harga, 0, ',', '.') }}</td>
-                    <td style="text-align: center;">{{ $detail->jumlah }} {{ $detail->obat->satuan }}</td>
+                    <td style="text-align: center;">{{ $detail->jumlah }} {{ $detail->satuan }}</td>
                     <td style="text-align: right; font-weight: 600;">Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</td>
                 </tr>
                 @endforeach

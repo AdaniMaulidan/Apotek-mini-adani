@@ -47,31 +47,62 @@
                     @endforeach
                 </select>
             </div>
-            <div class="form-group">
-                <label class="form-label">Satuan</label>
-                <select name="satuan" class="form-control" required>
-                    <option value="">-- Pilih Satuan --</option>
-                    @php
-                        $satuan_obat = ['Box', 'Botol', 'Strip', 'Tablet', 'Kapsul', 'Pcs', 'Tube'];
-                    @endphp
-                    @foreach($satuan_obat as $s)
-                        <option value="{{ $s }}" {{ old('satuan', $obat->satuan) == $s ? 'selected' : '' }}>{{ $s }}</option>
-                    @endforeach
-                </select>
+        <div style="background: var(--background); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px dashed var(--border);">
+            <h3 style="margin-bottom: 1.5rem; color: var(--primary);">Konfigurasi Multi-Satuan</h3>
+            
+            <!-- Satuan Besar -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1.5rem; margin-bottom: 1.5rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Satuan Besar (Utama)</label>
+                    <input type="text" name="satuan_besar" class="form-control" value="{{ old('satuan_besar', $obat->satuan_besar) }}" required>
+                </div>
+                <div style="text-align: center; color: var(--text-muted); padding-bottom: 0.75rem;">—</div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Harga Jual per Satuan Besar</label>
+                    <input type="number" name="harga_jual_besar" class="form-control" value="{{ old('harga_jual_besar', $obat->harga_jual_besar) }}" required>
+                </div>
+            </div>
+
+            <!-- Satuan Menengah -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1.5rem; margin-bottom: 1.5rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Satuan Menengah</label>
+                    <input type="text" name="satuan_menengah" class="form-control" value="{{ old('satuan_menengah', $obat->satuan_menengah) }}">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Isi per Satuan Besar</label>
+                    <input type="number" name="isi_menengah" class="form-control" value="{{ old('isi_menengah', $obat->isi_menengah) }}" min="1" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Harga Jual per Satuan Menengah</label>
+                    <input type="number" name="harga_jual_menengah" class="form-control" value="{{ old('harga_jual_menengah', $obat->harga_jual_menengah) }}">
+                </div>
+            </div>
+
+            <!-- Satuan Kecil -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1.5rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Satuan Kecil (Eceran)</label>
+                    <input type="text" name="satuan_kecil" class="form-control" value="{{ old('satuan_kecil', $obat->satuan_kecil) }}" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Isi per Satuan Menengah</label>
+                    <input type="number" name="isi_kecil" class="form-control" value="{{ old('isi_kecil', $obat->isi_kecil) }}" min="1" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Harga Jual per Satuan Kecil</label>
+                    <input type="number" name="harga_jual_kecil" class="form-control" value="{{ old('harga_jual_kecil', $obat->harga_jual_kecil) }}" required>
+                </div>
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
             <div class="form-group">
-                <label class="form-label">Harga Beli (Rp)</label>
+                <label class="form-label">Harga Beli Modal (Terakhir)</label>
                 <input type="number" step="0.01" name="harga_beli" class="form-control" value="{{ old('harga_beli', $obat->harga_beli) }}" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Harga Jual (Rp)</label>
-                <input type="number" step="0.01" name="harga_jual" class="form-control" value="{{ old('harga_jual', $obat->harga_jual) }}" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Stok</label>
+                <label class="form-label">Stok (Dalam Satuan Terkecil)</label>
                 <input type="number" name="stok" class="form-control" value="{{ old('stok', $obat->stok) }}" required>
             </div>
         </div>
@@ -93,4 +124,45 @@
         </div>
     </form>
 </div>
+@endsection
+@section('scripts')
+<script>
+    document.querySelector('select[name="jenis"]').addEventListener('change', function() {
+        const jenis = this.value;
+        const s_besar = document.querySelector('input[name="satuan_besar"]');
+        const s_menengah = document.querySelector('input[name="satuan_menengah"]');
+        const s_kecil = document.querySelector('input[name="satuan_kecil"]');
+        const i_menengah = document.querySelector('input[name="isi_menengah"]');
+        const i_kecil = document.querySelector('input[name="isi_kecil"]');
+
+        const confirmChange = confirm('Ubah konfigurasi satuan default berdasarkan jenis obat baru?');
+        if (!confirmChange) return;
+
+        if (jenis === 'Tablet' || jenis === 'Kapsul') {
+            s_besar.value = 'Box';
+            s_menengah.value = 'Strip';
+            s_kecil.value = jenis;
+            i_menengah.value = 10;
+            i_kecil.value = 10;
+        } else if (jenis === 'Sirup' || jenis === 'Cair') {
+            s_besar.value = 'Box';
+            s_menengah.value = 'Botol';
+            s_kecil.value = 'Botol';
+            i_menengah.value = 1;
+            i_kecil.value = 1;
+        } else if (jenis === 'Salep') {
+            s_besar.value = 'Box';
+            s_menengah.value = 'Tube';
+            s_kecil.value = 'Tube';
+            i_menengah.value = 1;
+            i_kecil.value = 1;
+        } else if (jenis === 'Injeksi') {
+            s_besar.value = 'Box';
+            s_menengah.value = 'Vial';
+            s_kecil.value = 'Vial';
+            i_menengah.value = 1;
+            i_kecil.value = 1;
+        }
+    });
+</script>
 @endsection

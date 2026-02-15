@@ -12,6 +12,7 @@ class PembelianDetail extends Model
         'pembelian_id',
         'kd_obat',
         'jumlah',
+        'satuan',
         'harga',
         'subtotal'
     ];

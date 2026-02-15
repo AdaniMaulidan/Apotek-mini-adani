@@ -12,6 +12,7 @@ class PenjualanDetail extends Model
         'penjualan_id',
         'kd_obat',
         'jumlah',
+        'satuan',
         'harga',
         'subtotal'
     ];

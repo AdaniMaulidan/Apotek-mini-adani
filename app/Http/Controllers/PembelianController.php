@@ -34,6 +34,7 @@ class PembelianController extends Controller
             'items.*.kd_obat' => 'required|exists:obats,id',
             'items.*.jumlah' => 'required|numeric|min:1',
             'items.*.harga' => 'required|numeric|min:0',
+            'items.*.satuan_beli' => 'required|in:besar,menengah,kecil',
             'diskon' => 'nullable|numeric|min:0'
         ]);
 
@@ -55,25 +56,51 @@ class PembelianController extends Controller
 
             foreach ($request->items as $item) {
                 $obat = Obat::findOrFail($item['kd_obat']);
-                $jumlah = intval($item['jumlah']);
-                $harga = floatval($item['harga']); // Mengambil harga dari input form pembelian
-                $subtotal = $harga * $jumlah;
+                $jumlahInput = intval($item['jumlah']);
+                $hargaInput = floatval($item['harga']);
+                $satuanBeli = $item['satuan_beli'];
+
+                // Konversi ke satuan terkecil untuk stok
+                $jumlahStok = $jumlahInput;
+                $hargaBesar = $hargaInput; // Default jika beli per Box
+
+                if ($satuanBeli == 'besar') {
+                    $jumlahStok = $jumlahInput * ($obat->isi_menengah * $obat->isi_kecil);
+                    $hargaBesar = $hargaInput;
+                } elseif ($satuanBeli == 'menengah') {
+                    $jumlahStok = $jumlahInput * $obat->isi_kecil;
+                    $hargaBesar = $hargaInput * $obat->isi_menengah; // Estimasi harga per Box
+                } elseif ($satuanBeli == 'kecil') {
+                    $jumlahStok = $jumlahInput;
+                    $hargaBesar = $hargaInput * ($obat->isi_menengah * $obat->isi_kecil); // Estimasi harga per Box
+                }
+
+                $subtotal = $hargaInput * $jumlahInput;
+
+                // Nama satuan asli yang dibeli
+                $namaSatuan = match($satuanBeli) {
+                    'besar' => $obat->satuan_besar,
+                    'menengah' => $obat->satuan_menengah,
+                    'kecil' => $obat->satuan_kecil,
+                };
 
                 PembelianDetail::create([
                     'pembelian_id' => $pembelian->id,
                     'kd_obat' => $obat->id,
-                    'jumlah' => $jumlah,
-                    'harga' => $harga,
+                    'jumlah' => $jumlahInput,
+                    'satuan' => $namaSatuan,
+                    'harga' => $hargaInput,
                     'subtotal' => $subtotal
                 ]);
 
-                // Update stok obat DAN update harga beli induk
-                $obat->stok += $jumlah;
-                $obat->harga_beli = $harga; // Update harga beli terakhir
+                // Update stok obat (selalu dalam satuan terkecil)
+                $obat->stok += $jumlahStok;
+                // Update harga beli (selalu disimpan dalam satuan besar)
+                $obat->harga_beli = $hargaBesar;
                 $obat->save();
 
                 $total += $subtotal;
-            }
+                                          }
 
             $totalSetelahDiskon = $total - $diskon;
             if ($totalSetelahDiskon < 0) $totalSetelahDiskon = 0;

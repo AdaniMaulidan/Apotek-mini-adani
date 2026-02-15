@@ -31,14 +31,24 @@
                 <span style="font-weight: 600;">{{ $obat->jenis }}</span>
             </div>
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
-                <span style="color: var(--text-muted);">Satuan</span>
-                <span style="font-weight: 600;">{{ $obat->satuan }}</span>
+                <span style="color: var(--text-muted);">Konversi Stok</span>
+                <span style="font-weight: 600;">1 {{ $obat->satuan_besar }} = {{ $obat->isi_menengah }} {{ $obat->satuan_menengah }} = {{ $obat->isi_menengah * $obat->isi_kecil }} {{ $obat->satuan_kecil }}</span>
             </div>
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
                 <span style="color: var(--text-muted);">Stok Saat Ini</span>
-                <span style="font-weight: 700; color: {{ $obat->stok <= 5 ? 'var(--danger)' : 'var(--success)' }};">
-                    {{ $obat->stok }} {{ $obat->satuan }}
+                <span style="font-weight: 700; color: {{ $obat->stok <= ($obat->isi_menengah * $obat->isi_kecil) ? 'var(--danger)' : 'var(--success)' }};">
+                    {{ $obat->formatStok() }}
                 </span>
+            </div>
+            @if($obat->satuan_menengah && $obat->satuan_menengah != $obat->satuan_kecil)
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">Total {{ $obat->satuan_menengah }}</span>
+                <span style="font-weight: 600;">{{ floor($obat->stok / $obat->isi_kecil) }} {{ $obat->satuan_menengah }}</span>
+            </div>
+            @endif
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                <span style="color: var(--text-muted);">Total Satuan Kecil</span>
+                <span style="font-weight: 600;">{{ $obat->stok }} {{ $obat->satuan_kecil }}</span>
             </div>
             <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
                 <span style="color: var(--text-muted);">Supplier Utama</span>
@@ -47,13 +57,25 @@
         </div>
 
         <div style="margin-top: 2rem; background: var(--background); padding: 1.5rem; border-radius: 12px;">
-            <div style="margin-bottom: 1rem;">
-                <small style="color: var(--text-muted); display: block;">Harga Beli (Terakhir)</small>
+            <div style="margin-bottom: 1.5rem; border-bottom: 1px dashed var(--border); padding-bottom: 1rem;">
+                <small style="color: var(--text-muted); display: block;">Harga Beli Modal (per {{ $obat->satuan_besar }})</small>
                 <span style="font-size: 1.25rem; font-weight: 700; color: var(--primary);">Rp {{ number_format($obat->harga_beli, 0, ',', '.') }}</span>
             </div>
-            <div>
-                <small style="color: var(--text-muted); display: block;">Harga Jual</small>
-                <span style="font-size: 1.25rem; font-weight: 700; color: var(--success);">Rp {{ number_format($obat->harga_jual, 0, ',', '.') }}</span>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <h4 style="margin: 0; font-size: 0.875rem; color: var(--text-muted);">Harga Jual Target:</h4>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>per {{ $obat->satuan_besar }}</span>
+                    <span style="font-weight: 700; color: var(--success);">Rp {{ number_format($obat->harga_jual_besar, 0, ',', '.') }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>per {{ $obat->satuan_menengah }}</span>
+                    <span style="font-weight: 700; color: var(--success);">Rp {{ number_format($obat->harga_jual_menengah, 0, ',', '.') }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>per {{ $obat->satuan_kecil }}</span>
+                    <span style="font-weight: 700; color: var(--success);">Rp {{ number_format($obat->harga_jual_kecil, 0, ',', '.') }}</span>
+                </div>
             </div>
         </div>
     </div>
@@ -79,7 +101,7 @@
                         <tr>
                             <td>{{ \Carbon\Carbon::parse($detail->pembelian->tgl_nota)->format('d/m/Y') }}</td>
                             <td><span style="font-weight: 600;">{{ $detail->pembelian->nota }}</span></td>
-                            <td>{{ $detail->jumlah }}</td>
+                            <td>{{ $detail->jumlah }} {{ $detail->satuan }}</td>
                             <td>Rp {{ number_format($detail->harga, 0, ',', '.') }}</td>
                             <td>Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</td>
                         </tr>
@@ -112,7 +134,7 @@
                         <tr>
                             <td>{{ \Carbon\Carbon::parse($detail->penjualan->tgl_nota)->format('d/m/Y') }}</td>
                             <td><span style="font-weight: 600;">{{ $detail->penjualan->nota }}</span></td>
-                            <td>{{ $detail->jumlah }}</td>
+                            <td>{{ $detail->jumlah }} {{ $detail->satuan }}</td>
                             <td>Rp {{ number_format($detail->harga, 0, ',', '.') }}</td>
                             <td>Rp {{ number_format($detail->subtotal, 0, ',', '.') }}</td>
                         </tr>

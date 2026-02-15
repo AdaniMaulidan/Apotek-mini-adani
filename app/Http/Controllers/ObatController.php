@@ -36,20 +36,26 @@ class ObatController extends Controller
         $request->validate([
             'nm_obat' => 'required',
             'jenis' => 'required',
-            'satuan' => 'required',
-            'harga_jual' => 'required|numeric',
+            'satuan_besar' => 'required',
+            'satuan_menengah' => 'nullable',
+            'satuan_kecil' => 'required',
+            'isi_menengah' => 'required|numeric|min:1',
+            'isi_kecil' => 'required|numeric|min:1',
+            'harga_jual_besar' => 'required|numeric',
+            'harga_jual_menengah' => 'nullable|numeric',
+            'harga_jual_kecil' => 'required|numeric',
             'kd_suplier' => 'required|exists:suppliers,id'
         ]);
 
         $data = $request->all();
         $data['kd_obat'] = Obat::generateKode();
-        $data['harga_beli'] = 0; // Harga beli akan diupdate saat ada transaksi pembelian
-        $data['stok'] = 0;       // Stok akan bertambah lewat transaksi pembelian
+        $data['harga_beli'] = 0; 
+        $data['stok'] = 0;       
 
         Obat::create($data);
 
         return redirect()->route('obat.index')
-            ->with('success', 'Obat berhasil ditambahkan dengan kode: ' . $data['kd_obat'] . '. Silahkan lakukan transaksi pembelian untuk mengisi stok dan harga beli.');
+            ->with('success', 'Obat berhasil ditambahkan dengan kode: ' . $data['kd_obat']);
     }
 
     public function show(string $id)
@@ -73,9 +79,15 @@ class ObatController extends Controller
             'kd_obat' => 'required|unique:obats,kd_obat,' . $id,
             'nm_obat' => 'required',
             'jenis' => 'required',
-            'satuan' => 'required',
+            'satuan_besar' => 'required',
+            'satuan_menengah' => 'nullable',
+            'satuan_kecil' => 'required',
+            'isi_menengah' => 'required|numeric|min:1',
+            'isi_kecil' => 'required|numeric|min:1',
             'harga_beli' => 'required|numeric',
-            'harga_jual' => 'required|numeric',
+            'harga_jual_besar' => 'required|numeric',
+            'harga_jual_menengah' => 'nullable|numeric',
+            'harga_jual_kecil' => 'required|numeric',
             'stok' => 'required|numeric',
             'kd_suplier' => 'required|exists:suppliers,id'
         ]);

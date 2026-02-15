@@ -30,6 +30,7 @@ class PenjualanController extends Controller
         $rules = [
             'tgl_nota' => 'required|date',
             'obat_id' => 'required|array',
+            'satuan_jual' => 'required|array',
             'jumlah' => 'required|array',
             'diskon' => 'nullable|numeric|min:0'
         ];
@@ -75,24 +76,41 @@ class PenjualanController extends Controller
 
             foreach ($request->obat_id as $key => $obat_id) {
                 $obat = Obat::findOrFail($obat_id);
-                $jumlah = $request->jumlah[$key];
+                $jumlahInput = $request->jumlah[$key];
+                $satuanJual = $request->satuan_jual[$key];
 
-                if ($jumlah > $obat->stok) {
+                // Hitung jumlah pengurangan stok dalam satuan terkecil
+                $jumlahStok = $jumlahInput;
+                if ($satuanJual == 'besar') {
+                    $jumlahStok = $jumlahInput * ($obat->isi_menengah * $obat->isi_kecil);
+                } elseif ($satuanJual == 'menengah') {
+                    $jumlahStok = $jumlahInput * $obat->isi_kecil;
+                }
+
+                if ($jumlahStok > $obat->stok) {
                     throw new \Exception('Stok tidak cukup untuk ' . $obat->nm_obat);
                 }
 
-                $harga = $obat->harga_jual;
-                $subtotal = $harga * $jumlah;
+                $harga = $obat->getHargaByUnit($satuanJual);
+                $subtotal = $harga * $jumlahInput;
+
+                // Nama satuan asli yang dijual
+                $namaSatuan = match($satuanJual) {
+                    'besar' => $obat->satuan_besar,
+                    'menengah' => $obat->satuan_menengah,
+                    'kecil' => $obat->satuan_kecil,
+                };
 
                 PenjualanDetail::create([
                     'penjualan_id' => $penjualan->id,
                     'kd_obat' => $obat->id,
-                    'jumlah' => $jumlah,
+                    'jumlah' => $jumlahInput,
+                    'satuan' => $namaSatuan,
                     'harga' => $harga,
                     'subtotal' => $subtotal
                 ]);
 
-                $obat->stok -= $jumlah;
+                $obat->stok -= $jumlahStok;
                 $obat->save();
 
                 $total += $subtotal;

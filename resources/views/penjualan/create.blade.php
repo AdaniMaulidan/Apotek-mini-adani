@@ -94,23 +94,38 @@
         <table id="itemsTable">
             <thead>
                 <tr>
-                    <th style="width: 45%;">Nama Obat</th>
-                    <th style="width: 20%;">Harga Jual</th>
+                    <th style="width: 40%;">Nama Obat</th>
+                    <th style="width: 15%;">Satuan</th>
+                    <th style="width: 15%;">Harga Satuan</th>
                     <th style="width: 10%;">Qty</th>
-                    <th style="width: 20%;">Subtotal</th>
+                    <th style="width: 15%;">Subtotal</th>
                     <th style="width: 5%;"></th>
                 </tr>
             </thead>
             <tbody id="itemsBody">
                 <tr class="item-row">
                     <td>
-                        <select name="obat_id[]" class="form-control obat-select" required onchange="updatePrice(this)">
+                        <select name="obat_id[]" class="form-control obat-select" required onchange="updateUnits(this)">
                             <option value="">-- Pilih Obat --</option>
                             @foreach($obats as $obat)
-                                <option value="{{ $obat->id }}" data-price="{{ $obat->harga_jual }}" data-stok="{{ $obat->stok }}">
-                                    {{ $obat->nm_obat }} (Stok: {{ $obat->stok }})
+                                <option value="{{ $obat->id }}" 
+                                    data-price-besar="{{ $obat->harga_jual_besar }}"
+                                    data-price-menengah="{{ $obat->harga_jual_menengah }}"
+                                    data-price-kecil="{{ $obat->harga_jual_kecil }}"
+                                    data-satuan-besar="{{ $obat->satuan_besar }}"
+                                    data-satuan-menengah="{{ $obat->satuan_menengah }}"
+                                    data-satuan-kecil="{{ $obat->satuan_kecil }}"
+                                    data-konversi-menengah="{{ $obat->isi_menengah }}"
+                                    data-konversi-kecil="{{ $obat->isi_kecil }}"
+                                    data-stok="{{ $obat->stok }}">
+                                    {{ $obat->nm_obat }} (Stok: {{ $obat->formatStok() }})
                                 </option>
                             @endforeach
+                        </select>
+                    </td>
+                    <td>
+                        <select name="satuan_jual[]" class="form-control satuan-select" required onchange="updatePrice(this)">
+                            <option value="kecil">Eceran</option>
                         </select>
                     </td>
                     <td>
@@ -127,14 +142,14 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="3" style="text-align: right; font-weight: 700;">Diskon (Rp)</td>
+                    <td colspan="4" style="text-align: right; font-weight: 700;">Diskon (Rp)</td>
                     <td>
                         <input type="number" name="diskon" id="diskonInput" class="form-control" value="{{ old('diskon', 0) }}" oninput="calculateGrandTotal()">
                     </td>
                     <td></td>
                 </tr>
                 <tr>
-                    <td colspan="3" style="text-align: right; font-weight: 700; font-size: 1.1rem; color: var(--success);">TOTAL BAYAR</td>
+                    <td colspan="4" style="text-align: right; font-weight: 700; font-size: 1.1rem; color: var(--success);">TOTAL BAYAR</td>
                     <td>
                         <input type="text" id="grandTotal" class="form-control" style="font-weight: 700; font-size: 1.1rem; color: var(--success);" readonly value="0">
                     </td>
@@ -171,13 +186,27 @@
         newRow.className = 'item-row';
         newRow.innerHTML = `
             <td>
-                <select name="obat_id[]" class="form-control obat-select" required onchange="updatePrice(this)">
+                <select name="obat_id[]" class="form-control obat-select" required onchange="updateUnits(this)">
                     <option value="">-- Pilih Obat --</option>
                     @foreach($obats as $obat)
-                        <option value="{{ $obat->id }}" data-price="{{ $obat->harga_jual }}" data-stok="{{ $obat->stok }}">
-                            {{ $obat->nm_obat }} (Stok: {{ $obat->stok }})
+                        <option value="{{ $obat->id }}" 
+                            data-price-besar="{{ $obat->harga_jual_besar }}"
+                            data-price-menengah="{{ $obat->harga_jual_menengah }}"
+                            data-price-kecil="{{ $obat->harga_jual_kecil }}"
+                            data-satuan-besar="{{ $obat->satuan_besar }}"
+                            data-satuan-menengah="{{ $obat->satuan_menengah }}"
+                            data-satuan-kecil="{{ $obat->satuan_kecil }}"
+                            data-konversi-menengah="{{ $obat->isi_menengah }}"
+                            data-konversi-kecil="{{ $obat->isi_kecil }}"
+                            data-stok="{{ $obat->stok }}">
+                            {{ $obat->nm_obat }}
                         </option>
                     @endforeach
+                </select>
+            </td>
+            <td>
+                <select name="satuan_jual[]" class="form-control satuan-select" required onchange="updatePrice(this)">
+                    <option value="kecil">Eceran</option>
                 </select>
             </td>
             <td>
@@ -201,15 +230,59 @@
         calculateGrandTotal();
     }
 
-    function updatePrice(select) {
+    function updateUnits(select) {
         const row = select.closest('tr');
-        const selectedOption = select.options[select.selectedIndex];
-        const price = selectedOption.dataset.price || 0;
-        const stok = selectedOption.dataset.stok || 0;
+        const option = select.options[select.selectedIndex];
+        const satuanSelect = row.querySelector('.satuan-select');
         
+        if (!option.value) return;
+
+        const units = [
+            { val: 'besar', label: option.dataset.satuanBesar },
+            { val: 'menengah', label: option.dataset.satuanMenengah },
+            { val: 'kecil', label: option.dataset.satuanKecil }
+        ];
+
+        satuanSelect.innerHTML = '';
+        units.forEach(u => {
+            if (u.label) {
+                const opt = document.createElement('option');
+                opt.value = u.val;
+                opt.text = u.label;
+                satuanSelect.add(opt);
+            }
+        });
+
+        updatePrice(satuanSelect);
+    }
+
+    function updatePrice(satuanSelect) {
+        const row = satuanSelect.closest('tr');
+        const obatSelect = row.querySelector('.obat-select');
+        const option = obatSelect.options[obatSelect.selectedIndex];
+        const unitType = satuanSelect.value;
+        const totalStokKecil = parseInt(option.dataset.stok) || 0;
+        
+        let price = 0;
+        let maxQty = 0;
+
+        if (unitType === 'besar') {
+            price = option.dataset.priceBesar;
+            const konversiBesar = (parseInt(option.dataset.konversiMenengah) || 1) * (parseInt(option.dataset.konversiKecil) || 1);
+            maxQty = Math.floor(totalStokKecil / konversiBesar);
+        } else if (unitType === 'menengah') {
+            price = option.dataset.priceMenengah;
+            const konversiMenengah = (parseInt(option.dataset.konversiKecil) || 1);
+            maxQty = Math.floor(totalStokKecil / konversiMenengah);
+        } else {
+            price = option.dataset.priceKecil;
+            maxQty = totalStokKecil;
+        }
+
         row.querySelector('.price-input').value = price;
         const qtyInput = row.querySelector('.qty-input');
-        qtyInput.max = stok;
+        qtyInput.max = maxQty;
+        if (parseInt(qtyInput.value) > maxQty) qtyInput.value = maxQty;
         
         calculateSubtotal(qtyInput);
     }
